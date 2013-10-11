@@ -1,0 +1,5 @@
+Staging_API_Url: http://staging-API.call-em-all.com/Webservices/CEAAPI_v2.asmx
+Production_API_Url: http://api.call-em-all.com/Webservices/CEAAPI_v2.asmx
+username: "4053832444"
+pin: "52002958"
+callerID: "0000001101"

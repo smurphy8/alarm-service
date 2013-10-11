@@ -1,10 +1,67 @@
 {-# Language NoImplicitPrelude ,OverloadedStrings #-}
 
 module Main where
-
+import CallOut 
+import Control.Concurrent (threadDelay)
+import Control.Monad (forever)
+import Network.Transport.TCP (createTransport, defaultTCPParameters)
+import Control.Distributed.Process
+import Control.Distributed.Process.Node
 import ClassyPrelude
 
+initializeNode :: IO LocalNode
+initializeNode = do 
+  (Right t) <- createTransport "127.0.0.1" "10501" defaultTCPParameters
+  newLocalNode t initRemoteTable
+          
+hi :: ByteString
+hi = "hello"
+
+hiString :: String
+hiString = "hello"
+
+replyBack :: (ProcessId, String) -> Process ()
+replyBack (sender, msg) = send sender msg
+
+logMessage :: String -> Process ()
+logMessage msg = say $ "handling " ++ msg
+
+
+sendTestHello node = forkProcess node $ do 
+                       self <- getSelfPid
+                       send self hi
+                       hello <- expect :: Process ByteString
+                       putStrLn.decodeUtf8 $ hello
+
+
+
+sendAndReceive node = forkProcess node $ do 
+                        -- Spawn worker inside one more process on the local node
+                        echoPid <- spawnLocal $ forever $ do 
+                                           -- Test the matches in order against each message in the queue
+                                           receiveWait [match logMessage, match replyBack]
+                        say "Send some messages!" 
+                        -- `say` sends a message to the process registered as logger.
+                        -- By default, this process simply sends the string to stderr.
+                        send echoPid hiString
+                        self <- getSelfPid
+                        send echoPid (self, hiString)
+                        -- like `expect` (waits for a message), but with timeOut
+                        m <- expectTimeout 1000000
+                        case m of 
+                          -- Die immediately - throws a Process Exit exception.
+                          Nothing -> die ("Nothing came back" ::String)
+                          (Just s ) -> say $ "got back " ++ s
+                        return ()
+                        
 
 main :: IO ()
 main = do
-  print "test"
+--  c <- getCEAPostExtCreateBroadcast "4055937107" "Hello Scott, This is Hal, Will you be my friend?"
+  node <- initializeNode
+  pid <- sendTestHello node
+  _ <- sendAndReceive node
+  liftIO $ threadDelay (1*1000000)
+  print pid
+
+
