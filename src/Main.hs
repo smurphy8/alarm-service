@@ -3,6 +3,7 @@
 module Main where
 
 import ClassyPrelude
+import Plow.Service.Alarm
 
 
 main :: IO ()
