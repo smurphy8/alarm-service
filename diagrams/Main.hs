@@ -125,6 +125,6 @@ onlyPossibleEdges = do
   return (i1,i2,"")
 
 stateGraph :: Gr (GraphState) String
-stateGraph = mkGraph onlyPossibleNodes (take 100 onlyPossibleEdges)
+stateGraph = mkGraph onlyPossibleNodes (take 10 onlyPossibleEdges)
 
-writeGraph = writeFile "./diagrams/graph.gv" $ graphviz stateGraph "AlarmStates" (64,48) (50,50) Landscape
+writeGraph = writeFile "./diagrams/graph.gv" $ graphviz' stateGraph
