@@ -28,6 +28,8 @@ logMessage :: String -> Process ()
 logMessage msg = say $ "handling " ++ msg
 
 
+
+sendTestHello :: LocalNode -> IO ProcessId
 sendTestHello node = forkProcess node $ do 
                        self <- getSelfPid
                        send self hi
@@ -35,7 +37,7 @@ sendTestHello node = forkProcess node $ do
                        putStrLn.decodeUtf8 $ hello
 
 
-
+sendAndReceive :: LocalNode -> IO ProcessId
 sendAndReceive node = forkProcess node $ do 
                         -- Spawn worker inside one more process on the local node
                         echoPid <- spawnLocal $ forever $ do 
