@@ -59,7 +59,7 @@ Executable alarm-service
 
 Executable alarm-diagrams 
     HS-Source-Dirs:     diagrams 
-    main-is:            Main.hs
+    main-is:            Main.lhs
     Build-Depends:      base                     >= 4         &&   < 5
                        ,graphviz                 >= 2999.16.0.0 && < 3000.0.0.0
                        ,fgl                      >= 5.4.2.4
