@@ -1,0 +1,8 @@
+module Diagrams where 
+
+import Prelude 
+
+
+
+diagrams :: IO () 
+diagrams = print "hello"

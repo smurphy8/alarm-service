@@ -4,8 +4,8 @@ Author:                 Scott Murphy<scottmurphy09@gmail.com>
 Maintainer:             Scott Murphy<scottmurphy09@gmail.com>
 License:                BSD3
 License-File:           LICENSE
--- Synopsis:               
--- Description:            
+Synopsis:               
+Description:            
 Cabal-Version:          >= 1.2
 Build-Type:             Simple
 
@@ -30,12 +30,14 @@ Library
                        ,process                  >= 1.1       &&   < 1.3
                        ,mtl                      >= 2.1       &&   < 2.2
                        ,aeson                    >= 0.6.1.0   &&   < 0.7.1.0
---                       ,HTTP                     >= 4000.2.8  &&   < 4000.3.8
+                       ,HTTP                     >= 4000.2.8  &&   < 4000.3.8
                        ,http-conduit             >= 1.8     &&     < 1.9.3
                        ,hspec                    >= 1.7.2     &&   < 1.7.3
                        ,safe                     >= 0.3.3     &&   < 0.4.3
                        ,text                     >= 0.11.3.1  &&   < 0.11.3.3
                        ,transformers             >= 0.3.0.0
+
+               
 
 Test-Suite spec
   Type:                 exitcode-stdio-1.0
@@ -55,6 +57,13 @@ Executable alarm-service
                                           
     ghc-options:      -threaded -O2 -rtsopts
 
+Executable alarm-diagrams 
+    HS-Source-Dirs:     diagrams 
+    main-is:            Main.hs
+    Build-Depends:      base                     >= 4         &&   < 5
+                       ,graphviz                 >= 2999.16.0.0 && < 3000.0.0.0
+                       ,fgl                      >= 5.4.2.4
+
 Source-Repository head
   Type:                 git
---  Location:             
+ Location:             

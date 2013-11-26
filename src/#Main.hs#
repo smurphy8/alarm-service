@@ -26,12 +26,17 @@ replyBack (sender, msg) = send sender msg
 logMessage :: String -> Process ()
 logMessage msg = say $ "handling " ++ msg
 
+
+
+sendTestHello :: LocalNode -> IO ProcessId
 sendTestHello node = forkProcess node $ do 
                        self <- getSelfPid
                        send self hi
                        hello <- expect :: Process ByteString
                        putStrLn.decodeUtf8 $ hello
 
+
+sendAndReceive :: LocalNode -> IO ProcessId
 sendAndReceive node = forkProcess node $ do 
                         -- Spawn worker inside one more process on the local node
                         echoPid <- spawnLocal $ forever $ do 
@@ -50,7 +55,7 @@ sendAndReceive node = forkProcess node $ do
                           Nothing -> die ("Nothing came back" ::String)
                           (Just s ) -> say $ "got back " ++ s
                         return ()
-
+                        
 
 main :: IO ()
 main = do
@@ -60,3 +65,5 @@ main = do
   _ <- sendAndReceive node
   liftIO $ threadDelay (1*1000000)
   print pid
+
+
