@@ -7,7 +7,7 @@
 
 > import Data.GraphViz
 > import Data.GraphViz.Printing
-    
+> import Data.GraphViz.Attributes.Complete
 > import Data.Graph.Inductive.Graphviz
 
 > import Data.Graph.Inductive.Graph
@@ -239,8 +239,12 @@ True is an allowable state change
 > 
 > writeGraph = writeFile "./diagrams/graph.gv" $ graphviz stateGraph "fgl" (8.0,11.0) (1,1) Portrait
 
+> goodDefaults = defaultParams {
+>                  fmtNode = (\(n,l) -> [Label $ StrLabel (T.pack.show $ l)]),
+>                  clusterID = (\x -> Data.GraphViz.Str x)}
 
 > writeGraphViz = do
->                 let gtd = graphToDot nonClusteredParams stateGraph
+>                 let gtd = graphToDot (goodDefaults) stateGraph
 >                     str = renderDot.toDot $ gtd
 >                 TIO.writeFile "./diagrams/autograph.gv" $  str
+
