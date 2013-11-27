@@ -1,4 +1,4 @@
-> {-# LANGUAGE BangPatterns,RankNTypes #-}
+> {-# LANGUAGE BangPatterns,RankNTypes,OverloadedStrings #-}
 
 > module Main where
 > import Prelude 
@@ -16,7 +16,7 @@
 
 > import qualified Data.Text.Lazy as T
 > import qualified Data.Text.Lazy.IO as TIO
-> import Text.PrettyPrint
+> import Text.PrettyPrint hiding (Style)
 > import System.IO (writeFile)
 
 > main :: IO () 
@@ -27,7 +27,7 @@
 
 
 
-> data People = Judy | Jackie |Bobby | Sue
+> data People = First | Second |Third
 >              deriving (Enum,Eq,Show,Ord,Bounded)
 
 > data Alarm = Clear | Clearing | Tripped |Tripping 
@@ -167,7 +167,7 @@ True is an allowable state change
 > walkThrough n = (take n).( iterate succ)
 
 > allPeople :: [People]
-> allPeople = walkThrough 4 Judy
+> allPeople = walkThrough 3 minBound
 
 > allAlarms :: [Alarm]
 > allAlarms = walkThrough 4 Clear
@@ -196,6 +196,7 @@ True is an allowable state change
 > onlyPossibleStates :: [GraphState]
 > onlyPossibleStates = do 
 >   s <- allStates 
+>   guard (not $ alarm s == Tripping && person s /= minBound)
 >   guard (not $ alarm s == Tripped && call s == NotCalling)
 >   guard (not $ alarm s == Tripping && call s /= NotCalling)
 >   guard (not $ alarm s == Clear && call s /= NotCalling)
@@ -241,13 +242,79 @@ True is an allowable state change
 
 > goodDefaults = defaultParams {
 >                  globalAttributes =  [globalAttrs],
->                  fmtNode = (\(n,l) -> [Label $ StrLabel (T.pack.show $ l)]),
+>                  fmtNode = (\(n,l) -> labelMatcher l ),
 >                  clusterID = (\x -> Data.GraphViz.Str x)}
 
 
-> globalAttrs = GraphAttrs [Size (GSize 8.0 (Just 11) True)]
+
+
+
+ data People = Judy | Jackie |Bobby | Sue
+              deriving (Enum,Eq,Show,Ord,Bounded)
+
+ data Alarm = Clear | Clearing | Tripped |Tripping 
+              deriving (Enum,Eq,Show,Ord)
+ 
+ data Call = NotCalling | Calling | Answered | NoAnswer | Ack  |NotAck
+              deriving (Enum,Eq,Show,Ord)
+
+ data Count = More | Max 
+            deriving (Enum,Eq,Show,Ord)
+
+ data State al cl cnt p = ST { 
+       alarm :: al,
+       call  :: cl,
+       count :: cnt,
+       person :: p 
+ 
+ }
+        deriving (Eq,Ord)
+
+[Label $ StrLabel (T.pack.show $ l)])
+
+Label Matcher is used to create a pattern for various label types
+
+> labelMatcher s@(ST a c cnt p) 
+>     |a == Clear = alarmClearLabel s
+>     | a == Clearing = alarmClearingLabel s
+>     |a == Tripped = alarmTrippedLabel s
+>     |a == Tripping = alarmTrippingLabel s
+>     | otherwise = defaultLabel s
+
+> alarmClearLabel s = [Label $ StrLabel (T.pack.show $ s) , FontSize 50.0
+>                      , FillColor clearColor, Shape BoxShape, clearStyle]
+>        where clearColor = [WC  (RGB 74 212 125 ) Nothing]
+>              clearStyle = Style [SItem Filled []]
+
+> alarmClearingLabel s = [Label $ StrLabel (T.pack.show $ s) , FontSize 50.0
+>                      , FillColor clearColor, Shape BoxShape, clearStyle]
+>        where clearColor = [WC  (RGB 225 250 197 ) Nothing]
+>              clearStyle = Style [SItem Filled []]
+
+
+> alarmTrippedLabel s = [Label $ StrLabel (T.pack.show $ s) , FontSize 50.0
+>                       , FillColor clearColor, Shape BoxShape, clearStyle]
+>        where clearColor = [WC  (RGB 217 4 54 ) Nothing]
+>              clearStyle = Style [SItem Filled []]
+
+
+> alarmTrippingLabel s = [Label $ StrLabel (T.pack.show.alarm $ s) , FontSize 50.0
+>                        , FillColor clearColor, Shape MDiamond, clearStyle]
+>        where clearColor = [WC  (RGB 217 114 4 ) Nothing]
+>              clearStyle = Style [SItem Filled []]
+
+
+> defaultLabel s =  [Label $ StrLabel (T.pack.show $ s)]
+
+> globalAttrs = GraphAttrs [Size (GSize 21.0 (Just 21.0) True),
+>                           Scale $ PVal (createPoint 0.25 1),
+>                           RankDir FromLeft, 
+>                           Splines SplineEdges, 
+>                           FontSize 100.0,
+>                           FontName "courier" ]
+
 > writeGraphViz = do
 >                 let gtd = graphToDot (goodDefaults) stateGraph
 >                     str = renderDot.toDot $ gtd
 >                 TIO.writeFile "./diagrams/autograph.gv" $  str
-
+                    
