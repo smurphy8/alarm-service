@@ -240,9 +240,12 @@ True is an allowable state change
 > writeGraph = writeFile "./diagrams/graph.gv" $ graphviz stateGraph "fgl" (8.0,11.0) (1,1) Portrait
 
 > goodDefaults = defaultParams {
+>                  globalAttributes =  [globalAttrs],
 >                  fmtNode = (\(n,l) -> [Label $ StrLabel (T.pack.show $ l)]),
 >                  clusterID = (\x -> Data.GraphViz.Str x)}
 
+
+> globalAttrs = GraphAttrs [Size (GSize 8.0 (Just 11) True)]
 > writeGraphViz = do
 >                 let gtd = graphToDot (goodDefaults) stateGraph
 >                     str = renderDot.toDot $ gtd
