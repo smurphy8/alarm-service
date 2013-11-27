@@ -5,22 +5,31 @@
 > import Control.Monad
 > import Control.Applicative
 
--- import Data.GraphViz
-
+> import Data.GraphViz
+> import Data.GraphViz.Printing
+    
 > import Data.Graph.Inductive.Graphviz
+
 > import Data.Graph.Inductive.Graph
 > import Data.Graph.Inductive.PatriciaTree
 > import Data.List 
+
+> import qualified Data.Text.Lazy as T
+> import qualified Data.Text.Lazy.IO as TIO
+> import Text.PrettyPrint
 > import System.IO (writeFile)
 
 > main :: IO () 
 > main = do 
->  print "hello"
+>   writeGraph
+
+
 
 
 
 > data People = Judy | Jackie |Bobby | Sue
 >              deriving (Enum,Eq,Show,Ord,Bounded)
+
 > data Alarm = Clear | Clearing | Tripped |Tripping 
 >              deriving (Enum,Eq,Show,Ord)
 > 
@@ -41,6 +50,17 @@
 
 > instance (Show a,Show c,Show cnt,Show p) => Show (State a c cnt p ) where
 >     show s = showGraphState s
+
+> stToDot :: (Show a, Show c, Show cnt, Show  p ) => State a c cnt p -> DotCode
+> stToDot s@(ST a c cnt p ) = dotText.T.pack.show $ s
+
+
+
+> instance (Show a,Show c,Show cnt,Show p) =>PrintDot (State a c cnt p) where 
+>      unqtDot s@(ST a c cnt p) = stToDot s
+>      toDot s@(ST a c cnt p) = stToDot s
+>      unqtListToDot sLst =  unqtListToDot $ renderDot.unqtDot <$> sLst
+>      listToDot sLst = listToDot (renderDot.toDot <$> sLst)
 
 True is an allowable state change
 
@@ -73,11 +93,12 @@ True is an allowable state change
 > callStateChecks NotCalling _ = False
 > callStateChecks Calling NotCalling = False
 > callStateChecks Calling _ = True 
-> -- any state beside calling or not calling is now in first underscore
+
+
+
 > callStateChecks _ Calling = True 
 > callStateChecks _ NotCalling = True 
 > callStateChecks _ _ = False
-
 
 
 ---------------------------------------------------------
@@ -217,3 +238,9 @@ True is an allowable state change
 > stateGraph = mkGraph onlyPossibleNodes  onlyPossibleEdges
 > 
 > writeGraph = writeFile "./diagrams/graph.gv" $ graphviz stateGraph "fgl" (8.0,11.0) (1,1) Portrait
+
+
+> writeGraphViz = do
+>                 let gtd = graphToDot nonClusteredParams stateGraph
+>                     str = renderDot.toDot $ gtd
+>                 TIO.writeFile "./diagrams/autograph.gv" $  str

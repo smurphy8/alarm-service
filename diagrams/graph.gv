@@ -1,15 +1,10 @@
 digraph fgl {
 	margin = "0"
-	page = "22.0,22.0"
-	size = "22.0,22.0"
+	page = "8.0,11.0"
+	size = "8.0,11.0"
 	rotate = "0"
 	ratio = "fill"
-	overlap = false
-	splines=ortho
-	mincross = 2.0;
-	Node [shape = circle ,style=filled,fillcolor="#33CC33"]{
-	1 [label = "Clear,NotCalling,More,Judy"]}
-	Node [shape = circle ,style=filled,fillcolor="#0099FF"]{
+	1 [label = "Clear,NotCalling,More,Judy"]
 	2 [label = "Clearing,Calling,More,Judy"]
 	3 [label = "Clearing,Answered,More,Judy"]
 	4 [label = "Clearing,Answered,Max,Judy"]
@@ -17,10 +12,8 @@ digraph fgl {
 	6 [label = "Clearing,NoAnswer,Max,Judy"]
 	7 [label = "Clearing,Ack,More,Judy"]
 	8 [label = "Clearing,Ack,Max,Judy"]
-	9 [label = "Clearing,NotAck,More,Judy"] 
+	9 [label = "Clearing,NotAck,More,Judy"]
 	10 [label = "Clearing,NotAck,Max,Judy"]
-        }	
-	Node [shape = circle ,style=filled,fillcolor="#E60000"]{
 	11 [label = "Tripped,Calling,More,Judy"]
 	12 [label = "Tripped,Answered,More,Judy"]
 	13 [label = "Tripped,Answered,Max,Judy"]
@@ -30,11 +23,7 @@ digraph fgl {
 	17 [label = "Tripped,Ack,Max,Judy"]
 	18 [label = "Tripped,NotAck,More,Judy"]
 	19 [label = "Tripped,NotAck,Max,Judy"]
-        }	
-	Node [shape = circle ,style=filled,fillcolor="#FFCC00"]{
 	20 [label = "Tripping,NotCalling,More,Judy"]
-        }	
-	Node [shape = circle ,style=filled,fillcolor="#0099FF"]{
 	21 [label = "Clearing,Calling,More,Jackie"]
 	22 [label = "Clearing,Answered,More,Jackie"]
 	23 [label = "Clearing,Answered,Max,Jackie"]
@@ -44,8 +33,6 @@ digraph fgl {
 	27 [label = "Clearing,Ack,Max,Jackie"]
 	28 [label = "Clearing,NotAck,More,Jackie"]
 	29 [label = "Clearing,NotAck,Max,Jackie"]
-        }	
-	Node [shape = circle ,style=filled,fillcolor="#0099FF"]{
 	30 [label = "Tripped,Calling,More,Jackie"]
 	31 [label = "Tripped,Answered,More,Jackie"]
 	32 [label = "Tripped,Answered,Max,Jackie"]
@@ -55,11 +42,7 @@ digraph fgl {
 	36 [label = "Tripped,Ack,Max,Jackie"]
 	37 [label = "Tripped,NotAck,More,Jackie"]
 	38 [label = "Tripped,NotAck,Max,Jackie"]
-        }	
-	Node [shape = circle ,style=filled,fillcolor="#FFCC00"]{
 	39 [label = "Tripping,NotCalling,More,Jackie"]
-        }	
-	Node [shape = circle ,style=filled,fillcolor="#0099FF"]{
 	40 [label = "Clearing,Calling,More,Bobby"]
 	41 [label = "Clearing,Answered,More,Bobby"]
 	42 [label = "Clearing,Answered,Max,Bobby"]
@@ -69,8 +52,6 @@ digraph fgl {
 	46 [label = "Clearing,Ack,Max,Bobby"]
 	47 [label = "Clearing,NotAck,More,Bobby"]
 	48 [label = "Clearing,NotAck,Max,Bobby"]
-        }
-	Node [shape = circle ,style=filled,fillcolor="#0099FF"]{
 	49 [label = "Tripped,Calling,More,Bobby"]
 	50 [label = "Tripped,Answered,More,Bobby"]
 	51 [label = "Tripped,Answered,Max,Bobby"]
@@ -80,11 +61,7 @@ digraph fgl {
 	55 [label = "Tripped,Ack,Max,Bobby"]
 	56 [label = "Tripped,NotAck,More,Bobby"]
 	57 [label = "Tripped,NotAck,Max,Bobby"]
-	}
-	Node [shape = circle ,style=filled,fillcolor="#FFCC00"]{
 	58 [label = "Tripping,NotCalling,More,Bobby"]
-	}
-	Node [shape = circle ,style=filled,fillcolor="#0099FF"]{
 	59 [label = "Clearing,Calling,More,Sue"]
 	60 [label = "Clearing,Answered,More,Sue"]
 	61 [label = "Clearing,Answered,Max,Sue"]
@@ -94,8 +71,6 @@ digraph fgl {
 	65 [label = "Clearing,Ack,Max,Sue"]
 	66 [label = "Clearing,NotAck,More,Sue"]
 	67 [label = "Clearing,NotAck,Max,Sue"]
-	}	
-	Node [shape = circle ,style=filled,fillcolor="#0099FF"]{
 	68 [label = "Tripped,Calling,More,Sue"]
 	69 [label = "Tripped,Answered,More,Sue"]
 	70 [label = "Tripped,Answered,Max,Sue"]
@@ -105,10 +80,7 @@ digraph fgl {
 	74 [label = "Tripped,Ack,Max,Sue"]
 	75 [label = "Tripped,NotAck,More,Sue"]
 	76 [label = "Tripped,NotAck,Max,Sue"]
-	}
-	Node [shape = circle ,style=filled,fillcolor="#0099FF"]{
 	77 [label = "Tripping,NotCalling,More,Sue"]
-	}	
 	1 -> 20 [label = ""]
 	2 -> 3 [label = ""]
 	2 -> 4 [label = ""]

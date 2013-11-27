@@ -62,6 +62,7 @@ Executable alarm-diagrams
     main-is:            Main.lhs
     Build-Depends:      base                     >= 4         &&   < 5
                        ,graphviz                 >= 2999.16.0.0 && < 3000.0.0.0
+                       ,pretty                   >= 1.1.1.0
                        ,fgl                      >= 5.4.2.4
 
 Source-Repository head
