@@ -166,10 +166,9 @@ countStateChecks :: Count -> Count -> Bool
 countStateChecks _ _ = True
 
 countStateChecks' :: GraphState -> GraphState -> Bool 
-countStateChecks' (ST _ c1 Max p1) (ST _ c2 ncnt p2) 
-    |(p1 == p2) = False -- State change must occur
---    |(c2 == Calling) = False
-    |otherwise = True
+countStateChecks' (ST _ Ack Max p1) (ST _ _ _ p2) = p1 /= p2
+countStateChecks' (ST _ NotAck Max p1) (ST _ _ _ p2) = p1 /= p2
+countStateChecks' (ST _ NoAnswer Max p1) (ST _ _ _ p2) = p1 /= p2    
 countStateChecks' (ST _ c1 More p1) (ST _ c2 More p2) 
     |(p1 == p2) = True -- State change must not occur
     |otherwise = False 
