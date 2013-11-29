@@ -64,6 +64,7 @@ Executable alarm-diagrams
                        ,graphviz                 >= 2999.16.0.0 && < 3000.0.0.0
                        ,pretty                   >= 1.1.1.0
                        ,fgl                      >= 5.4.2.4
+                       ,containers
 
 Source-Repository head
   Type:                 git

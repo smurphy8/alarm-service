@@ -27,6 +27,7 @@ import Data.GraphViz
 import Data.GraphViz.Printing
 import Data.GraphViz.Attributes.Complete
 import Data.Graph.Inductive.Graphviz
+import Data.IntSet
 
 import Data.Graph.Inductive.Graph
 import Data.Graph.Inductive.PatriciaTree
@@ -37,7 +38,7 @@ import qualified Data.Text.Lazy.IO as TIO
 import Text.PrettyPrint hiding (Style)
 import System.IO (writeFile)
 \end{code}
-
+nn
 
 
 \begin{code}
@@ -87,6 +88,8 @@ data State al cl cnt p = ST {
 
 
 \begin{code}
+
+
 instance (Show a,Show c,Show cnt,Show p) => Show (State a c cnt p ) where
      show s = showGraphState s
 
@@ -130,26 +133,42 @@ alarmStateChecks' _ _ = True
 callStateChecks :: Call -> Call -> Bool 
 callStateChecks NotCalling Calling = True 
 callStateChecks NotCalling NotCalling = True 
-callStateChecks NotCalling _ = False
 callStateChecks Calling NotCalling = False
-callStateChecks Calling _ = True 
-
-
-
+callStateChecks Calling Answered = True
+callStateChecks Calling NoAnswer = True
+callStateChecks Calling Calling  = False
+callStateChecks Answered Ack = True
+callStateChecks Answered NotAck = True
+callStateChecks Answered _  = False
+callStateChecks NotCalling _ = False
 callStateChecks _ Calling = True 
 callStateChecks _ NotCalling = True 
 callStateChecks _ _ = False
 
 
+callStateChecks' :: GraphState -> GraphState -> Bool
+callStateChecks' (ST s1 Answered _ p1 ) (ST s2 Ack _ p2 ) = (p1 == p2) && (s1 == s2)
+callStateChecks' (ST s1 Answered _ p1 ) (ST s2 NotAck _ p2 ) = (p1 == p2) && (s1 == s2)
+callStateChecks' (ST s1 Calling _ p1 )  (ST s2 _ _ p2) = ( p1 == p2) && (s1 == s2)
+
+callStateChecks' _ _ = True
+
+
+\end{code}
+
+data Call = NotCalling | Calling | Answered | NoAnswer | Ack  |NotAck
+
+\begin{code}
 
 
 countStateChecks :: Count -> Count -> Bool 
-countStateChecks Max Max = False --State change must occur
+-- countStateChecks Max Max = False --State change must occur
 countStateChecks _ _ = True
 
 countStateChecks' :: GraphState -> GraphState -> Bool 
 countStateChecks' (ST _ c1 Max p1) (ST _ c2 ncnt p2) 
     |(p1 == p2) = False -- State change must occur
+--    |(c2 == Calling) = False
     |otherwise = True
 countStateChecks' (ST _ c1 More p1) (ST _ c2 More p2) 
     |(p1 == p2) = True -- State change must not occur
@@ -159,6 +178,8 @@ countStateChecks' (ST _ c1 More p1) (ST _ c2 Max p2)
     | otherwise = False
 
 countStateChecks' _ _ = True
+
+
 
 
 
@@ -179,7 +200,7 @@ edgeStateChecks s1@(ST a1 c1 cnt1 p1) s2@(ST a2 c2 cnt2 p2)
                 |otherwise = False
 
 edgeStateChecks' s1@(ST a1 c1 cnt1 p1) s2@(ST a2 c2 cnt2 p2)      
-    |alarmStateChecks' s1 s2 && countStateChecks' s1 s2 = True
+    |alarmStateChecks' s1 s2 && countStateChecks' s1 s2 && callStateChecks' s1 s2  = True
     |otherwise = False
 
 
@@ -273,45 +294,101 @@ allEdges = do
 
 type AlarmNode = (Node,GraphState)
 type AlarmEdge = (Node,Node,String)
+
 onlyPossibleNodes :: [AlarmNode]
 onlyPossibleNodes = makeStateNodes onlyPossibleStates
+
+trippingNodes = fromList $ [n | (n,l) <-onlyPossibleNodes , (alarm l == Tripping)]
+
+trippedNodes  = fromList $ [n | (n,l) <-onlyPossibleNodes , (alarm l == Tripped)]
+
+clearingNodes = fromList $ [n | (n,l) <-onlyPossibleNodes , (alarm l == Clearing)]
+
+clearNodes = fromList $ [n | (n,l) <-onlyPossibleNodes , (alarm l == Clear)]
+
+data EdgeType = ClearToTripping | ClearingToTripped | TrippingToTripped| TrippedToClearing | ClearingToClear |TrippingToClear |Error
+              | TrippedToTripped | ClearingToClearing
+  
+clearToTrip n1 n2
+  | (member n1 clearingNodes) && (member n2 trippedNodes) = ClearingToTripped
+  | (member n1 clearingNodes) && (member n2 clearNodes)   = ClearingToClear
+  | (member n1 trippingNodes) && (member n2 trippedNodes) = TrippingToTripped
+  | (member n1 trippingNodes) && (member n2 clearNodes)   = TrippingToClear
+  | (member n1 trippedNodes)  && (member n2 clearingNodes) = TrippedToClearing
+  | (member n1 clearNodes)    && (member n2 trippingNodes) = ClearToTripping
+  | (member n1 trippedNodes)  && (member n2 trippedNodes) = TrippedToTripped
+  | (member n1 clearingNodes) && (member n2 clearingNodes) = ClearingToClearing
+  | otherwise = Error
+
 
 stateGraph :: Gr (GraphState) String
 stateGraph = mkGraph onlyPossibleNodes  onlyPossibleEdges
 
-writeGraph = writeFile "./diagrams/graph.gv" $ graphviz stateGraph "fgl" (8.0,11.0) (1,1) Portrait
+writeGraph = writeFile "./diagrams/graph.gv" $ graphviz stateGraph "fgl" (11.0,11.0) (1,1) Portrait
 
 goodDefaults = defaultParams {
                  globalAttributes =  [globalAttrs],
                  fmtNode = (\(n,l) -> labelMatcher l ),
+                 fmtEdge = (\(n1,n2,el) -> labelEdge n1 n2 ),
                  clusterID = (\x -> Data.GraphViz.Str x)}
+
+labelEdge n1 n2 = case clearToTrip n1 n2 of
+      ClearingToTripped   ->  [Color penColorRed, PenWidth penWidth, ArrowSize arrowSize]
+      ClearingToClear     ->  [Color penColorGreen, PenWidth penWidth, ArrowSize arrowSize]
+      TrippingToTripped   ->  [Color penColorRed, PenWidth penWidth, ArrowSize arrowSize]
+      TrippingToClear     ->  [Color penColorGreen, PenWidth penWidth, ArrowSize arrowSize]
+      TrippedToClearing   ->  [Color penColorLightG, PenWidth penWidth, ArrowSize arrowSize]
+      ClearToTripping     ->  [Color penColorOrange, PenWidth penWidth, ArrowSize arrowSize]
+      TrippedToTripped    ->  [Color penColorRed, PenWidth penWidth, ArrowSize arrowSize]
+      ClearingToClearing  ->  [Color penColorLightG, PenWidth penWidth, ArrowSize arrowSize]
+      Error               ->  [Color penColorBlack, PenWidth penWidth, ArrowSize arrowSize]
+  where penColorGreen  = [WC (RGB 74 212 125) Nothing]
+        penColorRed    = [WC (RGB 217 4 54) Nothing]
+        penColorLightG = [WC (RGB 48 8 158) Nothing]
+        penColorOrange = [WC (RGB 217 114 4) Nothing]
+        penColorBlack = [WC (RGB 0 0 0) Nothing]
+        penWidth = 10
+        arrowSize = 2
+
 
 
 labelMatcher s@(ST a c cnt p) 
     |a == Clear = alarmClearLabel s
     | a == Clearing = alarmClearingLabel s
-    |a == Tripped = alarmTrippedLabel s
+    |a == Tripped = case c of
+      Calling -> alarmTrippedCallingLabel s
+      _ -> alarmTrippedLabel s
     |a == Tripping = alarmTrippingLabel s
     | otherwise = defaultLabel s
 
-alarmClearLabel s = [Label $ StrLabel (T.pack.show $ s) , FontSize 50.0
-                     , FillColor clearColor, Shape BoxShape, clearStyle]
+nodeFontSize = FontSize 15.0
+-- nodeWidth = Width 3.0
+-- nodeHeight = Height 3.0
+
+alarmClearLabel s = [Label $ StrLabel (T.pack.show $ s) , nodeFontSize
+                     , FillColor clearColor, Shape Circle, clearStyle ]
        where clearColor = [WC  (RGB 74 212 125 ) Nothing]
              clearStyle = Style [SItem Filled []]
 
-alarmClearingLabel s = [Label $ StrLabel (T.pack.show $ s) , FontSize 50.0
+alarmClearingLabel s = [Label $ StrLabel (T.pack.show $ s) , nodeFontSize
                      , FillColor clearColor, Shape BoxShape, clearStyle]
        where clearColor = [WC  (RGB 225 250 197 ) Nothing]
              clearStyle = Style [SItem Filled []]
 
 
-alarmTrippedLabel s = [Label $ StrLabel (T.pack.show $ s) , FontSize 50.0
+alarmTrippedLabel s = [Label $ StrLabel (T.pack.show $ s) , nodeFontSize
                       , FillColor clearColor, Shape BoxShape, clearStyle]
        where clearColor = [WC  (RGB 217 4 54 ) Nothing]
              clearStyle = Style [SItem Filled []]
 
 
-alarmTrippingLabel s = [Label $ StrLabel (T.pack.show.alarm $ s) , FontSize 50.0
+alarmTrippedCallingLabel s = [Label $ StrLabel (T.pack.show $ s) , FontSize 10.0
+                      , FillColor clearColor, Shape Circle, clearStyle]
+       where clearColor = [WC  (RGB 217 4 54 ) Nothing]
+             clearStyle = Style [SItem Filled []]
+
+
+alarmTrippingLabel s = [Label $ StrLabel (T.pack.show.alarm $ s) , nodeFontSize
                        , FillColor clearColor, Shape MDiamond, clearStyle]
        where clearColor = [WC  (RGB 217 114 4 ) Nothing]
              clearStyle = Style [SItem Filled []]
@@ -319,11 +396,13 @@ alarmTrippingLabel s = [Label $ StrLabel (T.pack.show.alarm $ s) , FontSize 50.0
 
 defaultLabel s =  [Label $ StrLabel (T.pack.show $ s)]
 
-globalAttrs = GraphAttrs [Size (GSize 21.0 (Just 21.0) True),
+globalAttrs = GraphAttrs [Size (GSize 51.0 (Just 51.0) True),
                           Scale $ PVal (createPoint 1 1),
-                          RankDir FromTop, 
-                          Splines LineEdges, 
-                          FontSize 100.0,
+                          RankDir FromLeft,
+                          Ratio FillRatio,
+                          Overlap ScaleXYOverlaps,
+--                          Ratio $ AspectRatio 0.50,
+                          Splines SplineEdges, 
                           FontName "courier" ]
 
 writeGraphViz = do
