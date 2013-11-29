@@ -85,7 +85,39 @@ data State al cl cnt p = ST {
 
 \end{code}
 
-*define a node friendly Show*
+
+First, the States that make no sense are removed
+
+
+\begin{code}
+
+onlyPossibleStates :: [GraphState]
+onlyPossibleStates = do 
+  s <- allStates 
+  guard (not $ alarm s == Tripping && person s /= minBound)
+  guard (not $ alarm s == Tripped && call s == NotCalling)
+  guard (not $ alarm s == Tripping && call s /= NotCalling)
+  guard (not $ alarm s == Clear && call s /= NotCalling)
+  guard (not $ alarm s == Clear && person s /= minBound)
+  guard (not $ alarm s == Clearing && call s == NotCalling)
+  guard (not $ count s == Max && alarm s == Clear )
+  guard (not $ count s == Max && alarm s == Tripping )
+  guard (not $ count s == Max && call s == Calling)
+  return $ s
+
+
+
+onlyPossibleNodes :: [AlarmNode]
+onlyPossibleNodes = makeStateNodes onlyPossibleStates
+
+\end{code}
+
+
+
+A little handling for the DotCode type... See the
+
+[DotCode Documentation](http://hackage.haskell.org/package/graphviz-2999.16.0.0/docs/Data-GraphViz-Printing.html#t:DotCode)
+for more info...
 
 
 \begin{code}
@@ -111,11 +143,9 @@ instance (Show a,Show c,Show cnt,Show p) =>PrintDot (State a c cnt p) where
 \end{code}
 
 Below is the Edge State Check, this is the heart of the state machine alarm.
-
 States are locked in Calling modes and mutable in Not Calling, Answered and Tripping Modes
 
 \begin{code}
-
 
 edgeStateChecks :: GraphState -> GraphState -> Bool 
 edgeStateChecks s1@(ST Clear NotCalling More p1) s2@(ST Tripping NotCalling More p2)
@@ -198,13 +228,7 @@ edgeStateChecks s1@(ST Clearing NotAck Max p1) s2@(ST Clearing Calling More p2)
   |p1 /= maxBound = succ p1 == p2
 edgeStateChecks s1@(ST Clearing Ack More p1) s2@(ST Clear NotCalling More p2) = True                    
 edgeStateChecks s1@(ST Clearing Ack Max p1) s2@(ST Clear NotCalling More p2) = True
-
-
 edgeStateChecks _ _ = False
-
-
-                                                                 
-
 
 
 onlyPossibleEdges :: [AlarmEdge]
@@ -218,14 +242,15 @@ onlyPossibleEdges = do
 
 
 
+\end{code}
+                                                                 
+
+\begin{code}
+
+
+
 showGraphState (ST a c cnt p) = show a  ++ "," ++ show c ++ "," ++ show cnt ++ "," ++ show p
-
 printGraphState (ST a c cnt p) = putStrLn $ show a  ++ " " ++ show c ++ " " ++ show cnt ++ " " ++ show p
-
-
-
-
-
 
 walkThrough :: (Enum a) => Int ->  a -> [a]
 walkThrough n = (take n).( iterate succ)
@@ -257,27 +282,12 @@ allStates = do
 
 
 
-onlyPossibleStates :: [GraphState]
-onlyPossibleStates = do 
-  s <- allStates 
-  guard (not $ alarm s == Tripping && person s /= minBound)
-  guard (not $ alarm s == Tripped && call s == NotCalling)
-  guard (not $ alarm s == Tripping && call s /= NotCalling)
-  guard (not $ alarm s == Clear && call s /= NotCalling)
-  guard (not $ alarm s == Clear && person s /= minBound)
-  guard (not $ alarm s == Clearing && call s == NotCalling)
-  guard (not $ count s == Max && alarm s == Clear )
-  guard (not $ count s == Max && alarm s == Tripping )
-  guard (not $ count s == Max && call s == Calling)
-
-  return $ s
 
 
 allEdgeTuples :: [(GraphState,GraphState)] 
 allEdgeTuples = do 
   s1 <- onlyPossibleStates
   s2 <- onlyPossibleStates
---  guard $ s1 /= s2 
   return $ (s1,s2)
 
 
@@ -298,8 +308,6 @@ allEdges = do
 type AlarmNode = (Node,GraphState)
 type AlarmEdge = (Node,Node,String)
 
-onlyPossibleNodes :: [AlarmNode]
-onlyPossibleNodes = makeStateNodes onlyPossibleStates
 
 trippingNodes = fromList $ [n | (n,l) <-onlyPossibleNodes , (alarm l == Tripping)]
 
