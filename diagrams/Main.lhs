@@ -126,9 +126,13 @@ alarmStateChecks' :: GraphState -> GraphState -> Bool
 alarmStateChecks' (ST Tripping NotCalling _ _) (ST Tripped c _ _) 
  |c == Calling = True
  | otherwise = False
+alarmStateChecks' (ST Clearing Ack _ _) (ST s _ _ _)
+  | s == Clear = True
+  | otherwise = False
+alarmStateChecks' (ST Clearing NotAck _ _) (ST _ c _ _)
+  | c == Calling = True
+  | otherwise = False                
 alarmStateChecks' _ _ = True
-  
-
 
 callStateChecks :: Call -> Call -> Bool 
 callStateChecks NotCalling Calling = True 
@@ -145,12 +149,10 @@ callStateChecks _ Calling = True
 callStateChecks _ NotCalling = True 
 callStateChecks _ _ = False
 
-
 callStateChecks' :: GraphState -> GraphState -> Bool
 callStateChecks' (ST s1 Answered _ p1 ) (ST s2 Ack _ p2 ) = (p1 == p2) && (s1 == s2)
 callStateChecks' (ST s1 Answered _ p1 ) (ST s2 NotAck _ p2 ) = (p1 == p2) && (s1 == s2)
 callStateChecks' (ST s1 Calling _ p1 )  (ST s2 _ _ p2) = ( p1 == p2) && (s1 == s2)
-
 callStateChecks' _ _ = True
 
 
@@ -162,15 +164,15 @@ data Call = NotCalling | Calling | Answered | NoAnswer | Ack  |NotAck
 
 
 countStateChecks :: Count -> Count -> Bool 
--- countStateChecks Max Max = False --State change must occur
 countStateChecks _ _ = True
 
 countStateChecks' :: GraphState -> GraphState -> Bool 
-countStateChecks' (ST _ Ack Max p1) (ST _ _ _ p2) = p1 /= p2
 countStateChecks' (ST _ NotAck Max p1) (ST _ _ _ p2) = p1 /= p2
-countStateChecks' (ST _ NoAnswer Max p1) (ST _ _ _ p2) = p1 /= p2    
+countStateChecks' (ST _ NoAnswer Max p1) (ST _ _ _ p2) = p1 /= p2
+countStateChecks' (ST _ Ack Max p1) (ST _ _ _ p2) = p1 == p2
+countStateChecks' (ST _ _ Max p1) (ST _ _ More p2) =  p1 /= p2
 countStateChecks' (ST _ c1 More p1) (ST _ c2 More p2) 
-    |(p1 == p2) = True -- State change must not occur
+    |(p1 == p2) || (p2 == minBound) = True -- State change must not occur
     |otherwise = False 
 countStateChecks' (ST _ c1 More p1) (ST _ c2 Max p2) 
     |(c1 == Calling || c1 == NotAck) && (p1 == p2) = True 
@@ -183,24 +185,101 @@ countStateChecks' _ _ = True
 
 
 peopleStateChecks :: People -> People -> Bool 
-peopleStateChecks p1 p2 
-    |p1 == p2 = True
-    |p1 == maxBound = p2 == minBound                       
-    |(succ p1) == p2 = True 
-    |otherwise = False
+peopleStateChecks p1 p2  = True
+    -- |p1 == p2 = True
+    -- |p1 == maxBound = p2 == minBound                       
+    -- |(succ p1) == p2 = True 
+    -- |otherwise = False
 
 
 edgeStateChecks :: GraphState -> GraphState -> Bool 
-edgeStateChecks s1@(ST a1 c1 cnt1 p1) s2@(ST a2 c2 cnt2 p2) 
-                |alarmStateChecks a1 a2 && 
-                  callStateChecks c1 c2 && 
-                  countStateChecks cnt1 cnt2 &&
-                  peopleStateChecks p1 p2 = edgeStateChecks' s1 s2
-                |otherwise = False
+edgeStateChecks s1@(ST Clear NotCalling More p1) s2@(ST Tripping NotCalling More p2)
+  |p1 == p2 = True
+edgeStateChecks s1@(ST Tripping NotCalling More p1) s2@(ST Clear NotCalling More p2)
+  |p1 == p2 = True
+edgeStateChecks s1@(ST Tripping NotCalling More p1) s2@(ST Tripped Calling More p2)
+  |p1 == p2 = True                            
+edgeStateChecks s1@(ST Tripped Calling More p1) s2@(ST Tripped Answered More p2)
+  |p1 == p2 = True
+edgeStateChecks s1@(ST Tripped Calling More p1) s2@(ST Tripped Answered Max p2)
+  |p1 == p2 = True
+edgeStateChecks s1@(ST Tripped Calling More p1) s2@(ST Tripped NoAnswer More p2)
+  |p1 == p2 = True
+edgeStateChecks s1@(ST Tripped Calling More p1) s2@(ST Tripped NoAnswer Max p2)
+  |p1 == p2 = True
+edgeStateChecks s1@(ST Tripped Answered More p1) s2@(ST Clearing Calling More p2)
+  |p1 == p2 = True                            
+edgeStateChecks s1@(ST Tripped Answered More p1) s2@(ST Tripped Ack More p2)
+  |p1 == p2 = True              
+edgeStateChecks s1@(ST Tripped Answered More p1) s2@(ST Tripped NotAck More p2)
+  |p1 == p2 = True
+edgeStateChecks s1@(ST Tripped Answered Max p1) s2@(ST Tripped Ack Max p2)
+  |p1 == p2 = True              
+edgeStateChecks s1@(ST Tripped Answered Max p1) s2@(ST Tripped NotAck Max p2)
+  |p1 == p2 = True
+edgeStateChecks s1@(ST Tripped Answered Max p1) s2@(ST Clearing Calling More p2)
+  |p1 == p2 = True              
+edgeStateChecks s1@(ST Tripped NoAnswer More p1) s2@(ST Tripped Calling More p2)
+  |p1 == p2 = True
+edgeStateChecks s1@(ST Tripped NoAnswer More p1) s2@(ST Clearing Calling More p2)
+  |p1 == p2 = True              
+edgeStateChecks s1@(ST Tripped NoAnswer Max p1) s2@(ST Tripped Calling More p2)
+  |p1 == maxBound && p2 == minBound = True
+  |p1 /= maxBound = succ p1 == p2
+edgeStateChecks s1@(ST Tripped NoAnswer Max p1) s2@(ST Clearing Calling More p2)
+  |p1 == maxBound && p2 == minBound = True
+  |p1 /= maxBound = succ p1 == p2                    
+edgeStateChecks s1@(ST Tripped NotAck More p1) s2@(ST Tripped Calling More p2)
+  |p1 == p2 = True                            
+edgeStateChecks s1@(ST Tripped Ack More p1) s2@(ST Tripped Calling More p2)
+  |p1 == p2 = True
+edgeStateChecks s1@(ST Tripped NotAck Max p1) s2@(ST Tripped Calling More p2)
+  |p1 == maxBound && p2 == minBound = True
+  |p1 /= maxBound = succ p1 == p2
+edgeStateChecks s1@(ST Tripped Ack Max p1) s2@(ST Tripped Calling More p2)
+  |p1 == maxBound && p2 == minBound = True
+  |p1 /= maxBound = succ p1 == p2
 
-edgeStateChecks' s1@(ST a1 c1 cnt1 p1) s2@(ST a2 c2 cnt2 p2)      
-    |alarmStateChecks' s1 s2 && countStateChecks' s1 s2 && callStateChecks' s1 s2  = True
-    |otherwise = False
+-- Clearing States
+edgeStateChecks s1@(ST Clearing Calling More p1) s2@(ST Clearing Answered More p2)
+  |p1 == p2 = True
+edgeStateChecks s1@(ST Clearing Calling More p1) s2@(ST Clearing Answered Max p2)
+  |p1 == p2 = True
+edgeStateChecks s1@(ST Clearing Calling More p1) s2@(ST Clearing NoAnswer More p2)
+  |p1 == p2 = True
+edgeStateChecks s1@(ST Clearing Calling More p1) s2@(ST Clearing NoAnswer Max p2)
+  |p1 == p2 = True
+
+
+-----
+
+edgeStateChecks s1@(ST Clearing Answered More p1) s2@(ST Clearing Ack More p2)
+  |p1 == p2 = True              
+edgeStateChecks s1@(ST Clearing Answered More p1) s2@(ST Clearing NotAck More p2)
+  |p1 == p2 = True
+edgeStateChecks s1@(ST Clearing Answered Max p1) s2@(ST Clearing Ack Max p2)
+  |p1 == p2 = True              
+edgeStateChecks s1@(ST Clearing Answered Max p1) s2@(ST Clearing NotAck Max p2)
+  |p1 == p2 = True
+edgeStateChecks s1@(ST Clearing NoAnswer More p1) s2@(ST Clearing Calling More p2)
+  |p1 == p2 = True
+edgeStateChecks s1@(ST Clearing NoAnswer Max p1) s2@(ST Clearing Calling More p2)
+  |p1 == maxBound && p2 == minBound = True
+  |p1 /= maxBound = succ p1 == p2
+edgeStateChecks s1@(ST Clearing NotAck More p1) s2@(ST Clearing Calling More p2)
+  |p1 == p2 = True                            
+edgeStateChecks s1@(ST Clearing NotAck Max p1) s2@(ST Clearing Calling More p2)
+  |p1 == maxBound && p2 == minBound = True
+  |p1 /= maxBound = succ p1 == p2
+edgeStateChecks s1@(ST Clearing Ack More p1) s2@(ST Clear NotCalling More p2) = True                    
+edgeStateChecks s1@(ST Clearing Ack Max p1) s2@(ST Clear NotCalling More p2) = True
+
+
+edgeStateChecks _ _ = False
+
+
+                                                                 
+
 
 
 onlyPossibleEdges :: [AlarmEdge]
