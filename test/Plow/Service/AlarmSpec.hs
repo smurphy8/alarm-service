@@ -1,7 +1,8 @@
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
+{-# LANGUAGE  OverloadedStrings #-}
 module Plow.Service.AlarmSpec (main, spec) where
 
 import Test.Hspec
+import Data.Text
 
 main :: IO ()
 main = hspec spec

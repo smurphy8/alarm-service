@@ -1,0 +1,179 @@
+<pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE BangPatterns,RankNTypes #-}</span></code></pre>
+<pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">module</span> <span class="dt">Main</span> <span class="kw">where</span>
+<span class="kw">import</span> <span class="dt">Prelude</span> 
+<span class="kw">import</span> <span class="dt">Control.Monad</span>
+<span class="kw">import</span> <span class="dt">Control.Applicative</span></code></pre>
+<p>-- import Data.GraphViz</p>
+<pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">import</span> <span class="dt">Data.Graph.Inductive.Graphviz</span>
+<span class="kw">import</span> <span class="dt">Data.Graph.Inductive.Graph</span>
+<span class="kw">import</span> <span class="dt">Data.Graph.Inductive.PatriciaTree</span>
+<span class="kw">import</span> <span class="dt">Data.List</span> 
+<span class="kw">import</span> <span class="dt">System.IO</span> (<span class="fu">writeFile</span>)</code></pre>
+<pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="ot">main ::</span> <span class="dt">IO</span> () 
+main <span class="fu">=</span> <span class="kw">do</span> 
+ <span class="fu">print</span> <span class="st">&quot;hello&quot;</span></code></pre>
+<h1> 
+Here is an html tag
+</h1> 
+
+
+
+<pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">People</span> <span class="fu">=</span> <span class="dt">Judy</span> <span class="fu">|</span> <span class="dt">Jackie</span> <span class="fu">|</span><span class="dt">Bobby</span> <span class="fu">|</span> <span class="dt">Sue</span>
+             <span class="kw">deriving</span> (<span class="kw">Enum</span>,<span class="kw">Eq</span>,<span class="kw">Show</span>,<span class="kw">Ord</span>,<span class="kw">Bounded</span>)
+<span class="kw">data</span> <span class="dt">Alarm</span> <span class="fu">=</span> <span class="dt">Clear</span> <span class="fu">|</span> <span class="dt">Clearing</span> <span class="fu">|</span> <span class="dt">Tripped</span> <span class="fu">|</span><span class="dt">Tripping</span> 
+             <span class="kw">deriving</span> (<span class="kw">Enum</span>,<span class="kw">Eq</span>,<span class="kw">Show</span>,<span class="kw">Ord</span>)
+
+<span class="kw">data</span> <span class="dt">Call</span> <span class="fu">=</span> <span class="dt">NotCalling</span> <span class="fu">|</span> <span class="dt">Calling</span> <span class="fu">|</span> <span class="dt">Answered</span> <span class="fu">|</span> <span class="dt">NoAnswer</span> <span class="fu">|</span> <span class="dt">Ack</span>  <span class="fu">|</span><span class="dt">NotAck</span>
+             <span class="kw">deriving</span> (<span class="kw">Enum</span>,<span class="kw">Eq</span>,<span class="kw">Show</span>,<span class="kw">Ord</span>)</code></pre>
+<pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Count</span> <span class="fu">=</span> <span class="dt">More</span> <span class="fu">|</span> <span class="dt">Max</span> 
+           <span class="kw">deriving</span> (<span class="kw">Enum</span>,<span class="kw">Eq</span>,<span class="kw">Show</span>,<span class="kw">Ord</span>)</code></pre>
+<pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">State</span> al cl cnt p <span class="fu">=</span> <span class="dt">ST</span> { 
+<span class="ot">      alarm ::</span> al,
+<span class="ot">      call  ::</span> cl,
+<span class="ot">      count ::</span> cnt,
+<span class="ot">      person ::</span> p 
+
+}
+       <span class="kw">deriving</span> (<span class="kw">Eq</span>,<span class="kw">Ord</span>)</code></pre>
+<pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">instance</span> (<span class="kw">Show</span> a,<span class="kw">Show</span> c,<span class="kw">Show</span> cnt,<span class="kw">Show</span> p) <span class="ot">=&gt;</span> <span class="kw">Show</span> (<span class="dt">State</span> a c cnt p ) <span class="kw">where</span>
+    <span class="fu">show</span> s <span class="fu">=</span> showGraphState s</code></pre>
+<p>True is an allowable state change</p>
+<pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="ot">alarmStateChecks ::</span> <span class="dt">Alarm</span> <span class="ot">-&gt;</span> <span class="dt">Alarm</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span>
+alarmStateChecks  <span class="dt">Clear</span> <span class="dt">Clearing</span> <span class="fu">=</span>  <span class="kw">False</span>
+alarmStateChecks  <span class="dt">Clear</span> <span class="dt">Tripped</span>  <span class="fu">=</span>  <span class="kw">False</span>
+alarmStateChecks  <span class="dt">Clear</span> <span class="dt">Tripping</span> <span class="fu">=</span>  <span class="kw">True</span>
+alarmStateChecks  <span class="dt">Tripped</span> <span class="dt">Clearing</span>  <span class="fu">=</span>  <span class="kw">True</span>
+alarmStateChecks  <span class="dt">Tripped</span> <span class="dt">Tripping</span> <span class="fu">=</span> <span class="kw">False</span> 
+alarmStateChecks  <span class="dt">Tripped</span> <span class="dt">Clear</span>  <span class="fu">=</span> <span class="kw">False</span>
+alarmStateChecks  <span class="dt">Tripping</span> <span class="dt">Clearing</span> <span class="fu">=</span> <span class="kw">False</span> 
+alarmStateChecks  <span class="dt">Tripping</span> <span class="dt">Clear</span> <span class="fu">=</span> <span class="kw">True</span> 
+alarmStateChecks  <span class="dt">Tripping</span> <span class="dt">Tripped</span> <span class="fu">=</span> <span class="kw">True</span> 
+alarmStateChecks  <span class="dt">Clearing</span> <span class="dt">Clear</span> <span class="fu">=</span> <span class="kw">True</span>
+alarmStateChecks  <span class="dt">Clearing</span> <span class="dt">Tripped</span> <span class="fu">=</span> <span class="kw">True</span> 
+alarmStateChecks  <span class="dt">Clearing</span> <span class="dt">Tripping</span> <span class="fu">=</span> <span class="kw">False</span>
+alarmStateChecks  _  _ <span class="fu">=</span> <span class="kw">True</span></code></pre>
+<pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="ot">alarmStateChecks&#39; ::</span> <span class="dt">GraphState</span> <span class="ot">-&gt;</span> <span class="dt">GraphState</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span>
+alarmStateChecks&#39; (<span class="dt">ST</span> <span class="dt">Tripping</span> <span class="dt">NotCalling</span> _ _) (<span class="dt">ST</span> <span class="dt">Tripped</span> c _ _) 
+ <span class="fu">|</span>c <span class="fu">==</span> <span class="dt">Calling</span> <span class="fu">=</span> <span class="kw">True</span>
+ <span class="fu">|</span> <span class="fu">otherwise</span> <span class="fu">=</span> <span class="kw">False</span>
+alarmStateChecks&#39; _ _ <span class="fu">=</span> <span class="kw">True</span></code></pre>
+<pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="ot">callStateChecks ::</span> <span class="dt">Call</span> <span class="ot">-&gt;</span> <span class="dt">Call</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span> 
+callStateChecks <span class="dt">NotCalling</span> <span class="dt">Calling</span> <span class="fu">=</span> <span class="kw">True</span> 
+callStateChecks <span class="dt">NotCalling</span> <span class="dt">NotCalling</span> <span class="fu">=</span> <span class="kw">True</span> 
+callStateChecks <span class="dt">NotCalling</span> _ <span class="fu">=</span> <span class="kw">False</span>
+callStateChecks <span class="dt">Calling</span> <span class="dt">NotCalling</span> <span class="fu">=</span> <span class="kw">False</span>
+callStateChecks <span class="dt">Calling</span> _ <span class="fu">=</span> <span class="kw">True</span> 
+<span class="co">-- any state beside calling or not calling is now in first underscore</span>
+callStateChecks _ <span class="dt">Calling</span> <span class="fu">=</span> <span class="kw">True</span> 
+callStateChecks _ <span class="dt">NotCalling</span> <span class="fu">=</span> <span class="kw">True</span> 
+callStateChecks _ _ <span class="fu">=</span> <span class="kw">False</span></code></pre>
+<hr />
+<pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="ot">countStateChecks ::</span> <span class="dt">Count</span> <span class="ot">-&gt;</span> <span class="dt">Count</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span> 
+countStateChecks <span class="dt">Max</span> <span class="dt">Max</span> <span class="fu">=</span> <span class="kw">False</span> <span class="co">--State change must occur</span>
+countStateChecks _ _ <span class="fu">=</span> <span class="kw">True</span>
+
+<span class="ot">countStateChecks&#39; ::</span> <span class="dt">GraphState</span> <span class="ot">-&gt;</span> <span class="dt">GraphState</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span> 
+countStateChecks&#39; (<span class="dt">ST</span> _ c1 <span class="dt">Max</span> p1) (<span class="dt">ST</span> _ c2 ncnt p2) 
+    <span class="fu">|</span>(p1 <span class="fu">==</span> p2) <span class="fu">=</span> <span class="kw">False</span> <span class="co">-- State change must occur</span>
+    <span class="fu">|otherwise</span> <span class="fu">=</span> <span class="kw">True</span>
+countStateChecks&#39; (<span class="dt">ST</span> _ c1 <span class="dt">More</span> p1) (<span class="dt">ST</span> _ c2 <span class="dt">More</span> p2) 
+    <span class="fu">|</span>(p1 <span class="fu">==</span> p2) <span class="fu">=</span> <span class="kw">True</span> <span class="co">-- State change must not occur</span>
+    <span class="fu">|otherwise</span> <span class="fu">=</span> <span class="kw">False</span> 
+countStateChecks&#39; (<span class="dt">ST</span> _ c1 <span class="dt">More</span> p1) (<span class="dt">ST</span> _ c2 <span class="dt">Max</span> p2) 
+    <span class="fu">|</span>(c1 <span class="fu">==</span> <span class="dt">Calling</span> <span class="fu">||</span> c1 <span class="fu">==</span> <span class="dt">NotAck</span>) <span class="fu">&amp;&amp;</span> (p1 <span class="fu">==</span> p2) <span class="fu">=</span> <span class="kw">True</span> 
+    <span class="fu">|</span> <span class="fu">otherwise</span> <span class="fu">=</span> <span class="kw">False</span>
+
+countStateChecks&#39; _ _ <span class="fu">=</span> <span class="kw">True</span></code></pre>
+<hr />
+<pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="ot">peopleStateChecks ::</span> <span class="dt">People</span> <span class="ot">-&gt;</span> <span class="dt">People</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span> 
+peopleStateChecks p1 p2 
+    <span class="fu">|</span>p1 <span class="fu">==</span> p2 <span class="fu">=</span> <span class="kw">True</span>
+    <span class="fu">|</span>p1 <span class="fu">==</span> <span class="fu">maxBound</span> <span class="fu">=</span> p2 <span class="fu">==</span> <span class="fu">minBound</span>                       
+    <span class="fu">|</span>(<span class="fu">succ</span> p1) <span class="fu">==</span> p2 <span class="fu">=</span> <span class="kw">True</span> 
+    <span class="fu">|otherwise</span> <span class="fu">=</span> <span class="kw">False</span>
+
+<span class="co">-- | The number of primes in the edgeState determines the number of dependencies</span>
+<span class="ot">edgeStateChecks ::</span> <span class="dt">GraphState</span> <span class="ot">-&gt;</span> <span class="dt">GraphState</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span> 
+edgeStateChecks s1<span class="fu">@</span>(<span class="dt">ST</span> a1 c1 cnt1 p1) s2<span class="fu">@</span>(<span class="dt">ST</span> a2 c2 cnt2 p2) 
+                <span class="fu">|</span>alarmStateChecks a1 a2 <span class="fu">&amp;&amp;</span> 
+                  callStateChecks c1 c2 <span class="fu">&amp;&amp;</span> 
+                  countStateChecks cnt1 cnt2 <span class="fu">&amp;&amp;</span>
+                  peopleStateChecks p1 p2 <span class="fu">=</span> edgeStateChecks&#39; s1 s2
+                <span class="fu">|otherwise</span> <span class="fu">=</span> <span class="kw">False</span>
+
+edgeStateChecks&#39; s1<span class="fu">@</span>(<span class="dt">ST</span> a1 c1 cnt1 p1) s2<span class="fu">@</span>(<span class="dt">ST</span> a2 c2 cnt2 p2)      
+    <span class="fu">|</span>alarmStateChecks&#39; s1 s2 <span class="fu">&amp;&amp;</span> countStateChecks&#39; s1 s2 <span class="fu">=</span> <span class="kw">True</span>
+    <span class="fu">|otherwise</span> <span class="fu">=</span> <span class="kw">False</span>
+
+
+<span class="ot">onlyPossibleEdges ::</span> [<span class="dt">AlarmEdge</span>]
+onlyPossibleEdges <span class="fu">=</span> <span class="kw">do</span> 
+  n1<span class="fu">@</span>(i1,s1) <span class="ot">&lt;-</span> onlyPossibleNodes
+  n2<span class="fu">@</span>(i2,s2) <span class="ot">&lt;-</span> onlyPossibleNodes
+  guard (i1 <span class="fu">/=</span> i2)
+  guard <span class="fu">$</span> edgeStateChecks s1 s2
+  <span class="fu">return</span> (i1,i2,<span class="st">&quot;&quot;</span>)</code></pre>
+<pre class="sourceCode literate haskell"><code class="sourceCode haskell">showGraphState (<span class="dt">ST</span> a c cnt p) <span class="fu">=</span> <span class="fu">show</span> a  <span class="fu">++</span> <span class="st">&quot;,&quot;</span> <span class="fu">++</span> <span class="fu">show</span> c <span class="fu">++</span> <span class="st">&quot;,&quot;</span> <span class="fu">++</span> <span class="fu">show</span> cnt <span class="fu">++</span> <span class="st">&quot;,&quot;</span> <span class="fu">++</span> <span class="fu">show</span> p</code></pre>
+<pre class="sourceCode literate haskell"><code class="sourceCode haskell">printGraphState (<span class="dt">ST</span> a c cnt p) <span class="fu">=</span> <span class="fu">putStrLn</span> <span class="fu">$</span> <span class="fu">show</span> a  <span class="fu">++</span> <span class="st">&quot; &quot;</span> <span class="fu">++</span> <span class="fu">show</span> c <span class="fu">++</span> <span class="st">&quot; &quot;</span> <span class="fu">++</span> <span class="fu">show</span> cnt <span class="fu">++</span> <span class="st">&quot; &quot;</span> <span class="fu">++</span> <span class="fu">show</span> p
+<span class="kw">type</span> <span class="dt">GraphState</span> <span class="fu">=</span> <span class="dt">State</span> <span class="dt">Alarm</span> <span class="dt">Call</span> <span class="dt">Count</span> <span class="dt">People</span></code></pre>
+<p>-- | State Lists</p>
+<pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="ot">walkThrough ::</span> (<span class="kw">Enum</span> a) <span class="ot">=&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span>  a <span class="ot">-&gt;</span> [a]
+walkThrough n <span class="fu">=</span> (<span class="fu">take</span> n)<span class="fu">.</span>( <span class="fu">iterate</span> <span class="fu">succ</span>)</code></pre>
+<pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="ot">allPeople ::</span> [<span class="dt">People</span>]
+allPeople <span class="fu">=</span> walkThrough <span class="dv">4</span> <span class="dt">Judy</span></code></pre>
+<pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="ot">allAlarms ::</span> [<span class="dt">Alarm</span>]
+allAlarms <span class="fu">=</span> walkThrough <span class="dv">4</span> <span class="dt">Clear</span>
+
+<span class="ot">allCalls ::</span> [<span class="dt">Call</span>]
+allCalls <span class="fu">=</span> walkThrough <span class="dv">6</span> <span class="dt">NotCalling</span>
+
+<span class="ot">allCounts ::</span> [<span class="dt">Count</span>]
+allCounts <span class="fu">=</span> walkThrough <span class="dv">2</span> <span class="dt">More</span></code></pre>
+<p>-- | State N-tuples</p>
+<pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="ot">allStates ::</span> [<span class="dt">GraphState</span>]
+allStates <span class="fu">=</span> <span class="kw">do</span> 
+  p <span class="ot">&lt;-</span> allPeople
+             
+  a <span class="ot">&lt;-</span> allAlarms
+             
+  c <span class="ot">&lt;-</span> allCalls 
+       
+  cnt <span class="ot">&lt;-</span> allCounts
+  <span class="fu">return</span> <span class="fu">$</span> <span class="dt">ST</span>  a c cnt p</code></pre>
+<pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="ot">onlyPossibleStates ::</span> [<span class="dt">GraphState</span>]
+onlyPossibleStates <span class="fu">=</span> <span class="kw">do</span> 
+  s <span class="ot">&lt;-</span> allStates 
+  guard (<span class="fu">not</span> <span class="fu">$</span> alarm s <span class="fu">==</span> <span class="dt">Tripped</span> <span class="fu">&amp;&amp;</span> call s <span class="fu">==</span> <span class="dt">NotCalling</span>)
+  guard (<span class="fu">not</span> <span class="fu">$</span> alarm s <span class="fu">==</span> <span class="dt">Tripping</span> <span class="fu">&amp;&amp;</span> call s <span class="fu">/=</span> <span class="dt">NotCalling</span>)
+  guard (<span class="fu">not</span> <span class="fu">$</span> alarm s <span class="fu">==</span> <span class="dt">Clear</span> <span class="fu">&amp;&amp;</span> call s <span class="fu">/=</span> <span class="dt">NotCalling</span>)
+  guard (<span class="fu">not</span> <span class="fu">$</span> alarm s <span class="fu">==</span> <span class="dt">Clear</span> <span class="fu">&amp;&amp;</span> person s <span class="fu">/=</span> <span class="fu">minBound</span>)
+  guard (<span class="fu">not</span> <span class="fu">$</span> alarm s <span class="fu">==</span> <span class="dt">Clearing</span> <span class="fu">&amp;&amp;</span> call s <span class="fu">==</span> <span class="dt">NotCalling</span>)
+  guard (<span class="fu">not</span> <span class="fu">$</span> count s <span class="fu">==</span> <span class="dt">Max</span> <span class="fu">&amp;&amp;</span> alarm s <span class="fu">==</span> <span class="dt">Clear</span> )
+  guard (<span class="fu">not</span> <span class="fu">$</span> count s <span class="fu">==</span> <span class="dt">Max</span> <span class="fu">&amp;&amp;</span> alarm s <span class="fu">==</span> <span class="dt">Tripping</span> )
+  guard (<span class="fu">not</span> <span class="fu">$</span> count s <span class="fu">==</span> <span class="dt">Max</span> <span class="fu">&amp;&amp;</span> call s <span class="fu">==</span> <span class="dt">Calling</span>)
+
+  <span class="fu">return</span> <span class="fu">$</span> s</code></pre>
+<pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="ot">allEdgeTuples ::</span> [(<span class="dt">GraphState</span>,<span class="dt">GraphState</span>)] 
+allEdgeTuples <span class="fu">=</span> <span class="kw">do</span> 
+  s1 <span class="ot">&lt;-</span> onlyPossibleStates
+  s2 <span class="ot">&lt;-</span> onlyPossibleStates
+<span class="co">--  guard $ s1 /= s2 </span>
+  <span class="fu">return</span> <span class="fu">$</span> (s1,s2)</code></pre>
+<pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="ot">makeStateNodes ::</span> [<span class="dt">GraphState</span>] <span class="ot">-&gt;</span> [(<span class="dt">Node</span>,<span class="dt">GraphState</span>)]
+makeStateNodes st <span class="fu">=</span> <span class="fu">zip</span> [<span class="dv">1</span> <span class="fu">..</span>] st
+
+<span class="ot">allEdges ::</span> [(<span class="dt">Node</span>, <span class="dt">Node</span>)]
+allEdges <span class="fu">=</span> <span class="kw">do</span> 
+   (i1,_) <span class="ot">&lt;-</span> makeStateNodes onlyPossibleStates
+   (i2,_) <span class="ot">&lt;-</span> makeStateNodes onlyPossibleStates
+   guard (i1 <span class="fu">/=</span> i2)
+   <span class="fu">return</span> (i1,i2)</code></pre>
+<pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">AlarmNode</span> <span class="fu">=</span> (<span class="dt">Node</span>,<span class="dt">GraphState</span>)
+<span class="kw">type</span> <span class="dt">AlarmEdge</span> <span class="fu">=</span> (<span class="dt">Node</span>,<span class="dt">Node</span>,<span class="dt">String</span>)
+<span class="ot">onlyPossibleNodes ::</span> [<span class="dt">AlarmNode</span>]
+onlyPossibleNodes <span class="fu">=</span> makeStateNodes onlyPossibleStates
+
+<span class="ot">stateGraph ::</span> <span class="dt">Gr</span> (<span class="dt">GraphState</span>) <span class="dt">String</span>
+stateGraph <span class="fu">=</span> mkGraph onlyPossibleNodes  onlyPossibleEdges
+
+writeGraph <span class="fu">=</span> <span class="fu">writeFile</span> <span class="st">&quot;./diagrams/graph.gv&quot;</span> <span class="fu">$</span> graphviz stateGraph <span class="st">&quot;fgl&quot;</span> (<span class="fl">8.0</span>,<span class="fl">11.0</span>) (<span class="dv">1</span>,<span class="dv">1</span>) <span class="dt">Portrait</span></code></pre>
