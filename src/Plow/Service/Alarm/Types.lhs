@@ -18,16 +18,16 @@ import Data.Vector
 \end{code}
 
 <h2> The generic State for the Alarm system </h2>
-+ [**Alarm**][alarm]
-+ [**Call**][call]     
-+ [**Count**][count]    
-+ [**Person**][person]    
++ [**Alarm**](#alarm)
++ [**Call**](#call)
++ [**Count**](#count)
++ [**Person**](#person)
 + **timer**    
 
 
 --------------------------------------------------
 
-[call]:
+<a name="call"/>
 **Call** represents the various States of the notification engine
 
 
@@ -44,7 +44,7 @@ data Call  = NotCalling | Calling | Answered | NoAnswer | Ack  |NotAck
 
 ------------------------------------------------
 
-[person]:
+<a name="person"/>
 
 **People** determines who the system should call, the input datatype should be
  a Set Style Monad (With Order)
@@ -80,7 +80,7 @@ lastPerson (People a) = last a
 
 --------------------------------------------------
 
-[alarm]
+<a name="alarm"/>
 **Alarm** handles the modes that an alarm as
  *Clear
  *Clearing
@@ -95,7 +95,7 @@ data Alarm = Clear | Clearing | Tripped | Tripping
 
 \end{code}
 
- [count]
+<a name="count"/>
 
  **Count** is defined to simplify reading alarm counts in the statemachine.
 
