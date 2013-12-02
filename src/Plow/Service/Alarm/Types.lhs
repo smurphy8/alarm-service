@@ -9,11 +9,21 @@
 \begin{code}
 
 {-# LANGUAGE BangPatterns,RankNTypes,OverloadedStrings #-}
+{-# LANGUAGE CPP, DeriveDataTypeable, FlexibleContexts,
+  GeneralizedNewtypeDeriving, MultiParamTypeClasses,
+  TemplateHaskell, TypeFamilies, RecordWildCards #-}
 module Plow.Service.Alarm.Types where
 
 import Data.Text hiding (head, last)
 import Prelude   hiding (head, last)
 import Data.Vector
+import Data.Acid            ( AcidState, Query, Update
+                            , makeAcidic, openLocalState )
+import Data.Acid.Advanced   ( query', update' )
+import Data.Acid.Local      ( createCheckpointAndClose )
+import Data.SafeCopy        ( base, deriveSafeCopy )
+import Data.Data            ( Data, Typeable )
+
 
 \end{code}
 
@@ -37,7 +47,8 @@ import Data.Vector
 
 
 data Call  = NotCalling | Calling | Answered | NoAnswer | Ack  |NotAck
-               deriving (Enum,Eq,Show,Ord)
+            deriving (Eq, Ord, Read, Show, Data, Typeable)                                   
+
 
 
 \end{code}
@@ -58,10 +69,11 @@ data Person p e cnt = Person  { phoneNumber :: p ,
                            email ::e,
                            callCount::cnt
                            }
-            deriving (Eq,Show)
+            deriving (Eq, Ord, Read, Show, Data, Typeable)                                   
 
 newtype People a = People a
-                 deriving (Eq,Show)
+   deriving (Eq, Ord, Read, Show, Data, Typeable)                                   
+
 
 
 
@@ -91,7 +103,8 @@ lastPerson (People a) = last a
 \begin{code}
 
 data Alarm = Clear | Clearing | Tripped | Tripping
-           deriving (Eq,Show)
+   deriving (Eq, Ord, Read, Show, Data, Typeable)                                   
+
 
 \end{code}
 
@@ -102,8 +115,9 @@ data Alarm = Clear | Clearing | Tripped | Tripping
 \begin{code}
 
 
-data Count = More | Max 
-            deriving (Enum,Eq,Show,Ord)
+data Count = More | Max
+   deriving (Eq, Ord, Read, Show, Data, Typeable)                                   
+
 
 
 \end{code}
@@ -112,7 +126,7 @@ data Count = More | Max
 \begin{code}
 
 
-data State al cl cnt p  t = ST { 
+data GraphState al cl cnt p  t = GraphState { 
        alarm :: al,
        call  :: cl,
        count :: cnt,
@@ -120,10 +134,9 @@ data State al cl cnt p  t = ST {
        timer :: t
  
  }
-   deriving (Eq,Ord)
-
-
-type DefaultGraphState = State Alarm Call Count DefaultPeople
+   deriving (Eq, Ord, Read, Show, Data, Typeable)
+            
+type DefaultGraphState = GraphState Alarm Call Count DefaultPeople
 
 
 \end{code}
@@ -144,12 +157,14 @@ data AlarmDefinition  i c t r cl = AlarmDefinition {
   tripTime :: t,
   recallTime :: r,
   callList :: cl
-  
   }
-  deriving (Show, Eq)
+   deriving (Eq, Ord, Read, Show, Data, Typeable)                                   
+
 
 newtype AlarmId i = AlarmId i
-                deriving (Show, Eq)
+            deriving (Eq, Ord, Read, Show, Data, Typeable)                                   
+
+
 
 type DefaultAlarmId = AlarmId Int
 type DefaultAlarmDefinition = AlarmDefinition DefaultAlarmId Int Int Int ( DefaultPeople)
@@ -158,4 +173,16 @@ type DefaultAlarmDefinition = AlarmDefinition DefaultAlarmId Int Int Int ( Defau
 
 
   
+
+<h2> Acid State definition </h2>
+
+**Acid State** is a pure haskell database solution
+that helps keep this piece really portable
+
+\begin{code}
+
+
+$(deriveSafeCopy 0 'base ''GraphState )
+
+\end{code}
 
