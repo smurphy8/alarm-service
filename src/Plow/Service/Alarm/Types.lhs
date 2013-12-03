@@ -17,15 +17,19 @@ module Plow.Service.Alarm.Types where
 import Data.Text hiding (head, last)
 import Prelude   hiding (head, last)
 import Data.Vector
+import Control.Monad.State  ( get, put )
 import Data.Acid            ( AcidState, Query, Update
                             , makeAcidic, openLocalState )
 import Data.Acid.Advanced   ( query', update' )
 import Data.Acid.Local      ( createCheckpointAndClose )
-import Data.SafeCopy        ( base, deriveSafeCopy )
+import Data.SafeCopy        ( SafeCopy, base, deriveSafeCopy )
 import Data.Data            ( Data, Typeable )
 
 
 \end{code}
+
+[Use SafeCopy Version 0.8.3 or greater](https://github.com/acid-state/safecopy.git)
+
 
 <h2> The generic State for the Alarm system </h2>
 + [**Alarm**](#alarm)
@@ -49,8 +53,6 @@ import Data.Data            ( Data, Typeable )
 data Call  = NotCalling | Calling | Answered | NoAnswer | Ack  |NotAck
             deriving (Eq, Ord, Read, Show, Data, Typeable)                                   
 
-
-
 \end{code}
 
 ------------------------------------------------
@@ -65,20 +67,20 @@ data Call  = NotCalling | Calling | Answered | NoAnswer | Ack  |NotAck
 \begin{code}
 
 
-data Person p e cnt = Person  { phoneNumber :: p ,
-                           email ::e,
-                           callCount::cnt
+data Person = Person  { phoneNumber :: Int ,
+                           email ::Text,
+                           callCount::Int
                            }
             deriving (Eq, Ord, Read, Show, Data, Typeable)                                   
 
 newtype People a = People a
-   deriving (Eq, Ord, Read, Show, Data, Typeable)                                   
+   deriving (Eq, Ord, Read, Show, Data, Typeable,SafeCopy)                                   
 
 
 
 
-type DefaultPerson = Person Int Text Int
-type DefaultPeople = People (Vector Text)
+
+type DefaultPeople = People (Vector (Person))
 
 
 firstPerson :: People (Vector a) -> a
@@ -126,17 +128,17 @@ data Count = More | Max
 \begin{code}
 
 
-data GraphState al cl cnt p  t = GraphState { 
-       alarm :: al,
-       call  :: cl,
-       count :: cnt,
-       person :: p,
-       timer :: t
+data GraphState = GraphState { 
+       alarm :: Alarm,
+       call  :: Call,
+       count :: Count,
+       person :: People (Vector ( Person)),
+       timer :: Int
  
  }
    deriving (Eq, Ord, Read, Show, Data, Typeable)
             
-type DefaultGraphState = GraphState Alarm Call Count DefaultPeople
+
 
 
 \end{code}
@@ -181,6 +183,14 @@ that helps keep this piece really portable
 
 \begin{code}
 
+
+$(deriveSafeCopy 0 'base ''Person)
+
+$(deriveSafeCopy 0 'base ''Call)
+
+$(deriveSafeCopy 0 'base ''Alarm)
+
+$(deriveSafeCopy 0 'base ''Count)
 
 $(deriveSafeCopy 0 'base ''GraphState )
 
