@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="generator" content="pandoc">
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <!--[if lt IE 9]>
+    <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+</head>
+<body>
+<p>{-# LANGUAGE BangPatterns,RankNTypes,OverloadedStrings #-} {-# LANGUAGE CPP, DeriveDataTypeable, FlexibleContexts, GeneralizedNewtypeDeriving, MultiParamTypeClasses, TemplateHaskell, TypeFamilies, RecordWildCards #-} module Plow.Service.Alarm.Acid where</p>
+<p>-- import Plow.Service.Alarm.Internal</p>
+<p>import Plow.Service.Alarm.Types</p>
+<p>{-| Various naming conventions for stuff here I will try to stick to:</p>
+<p>Controller -&gt; looks at the current state and decides what should happen based apon it</p>
+<p>Handler -&gt; takes an incoming state and some parameters and returns a new state</p>
+<p>Rxer -&gt; recieves some piece of data from an outside source</p>
+<p>Sender -&gt; sends a piece of data to an outside source.</p>
+<p>Store -&gt; put a piece of data into the local storage</p>
+<p>Get -&gt; get a piece of data from the local storage</p>
+<p>|-}</p>
+<p>import Data.Text hiding (head, last) import Prelude hiding (head, last) import Data.Vector import Control.Applicative import Control.Monad.Reader (ask) import Control.Monad.State ( get, put ) import Data.Acid ( AcidState, Query, Update , makeAcidic, openLocalState ) import Data.Acid.Advanced ( query', update' ) import Data.Acid.Local ( createCheckpointAndClose ) import Data.SafeCopy ( base, deriveSafeCopy ) import Data.Data ( Data, Typeable )</p>
+<p>testPeople :: DefaultPeople testPeople = People (fromList [Person 555 &quot;test@Test.com&quot; 0])</p>
+<p>initialGraphState :: GraphState initialGraphState = GraphState Clear NotCalling More testPeople 0</p>
+<p>-- | Cause I am dumb and will forget this... -- | Update is an instance of MonadState so you get a 'get' and 'put'</p>
+<p>incTimer :: Update GraphState Int incTimer = do c@GraphState{..} &lt;- get let newTimer = succ timer return newTimer</p>
+<p>-- | Reader instance on Query, allows ask</p>
+<p>checkTimer :: Query GraphState Int checkTimer = do timer &lt;$&gt; ask</p>
+<p>getSystemState :: Query GraphState GraphState getSystemState = ask</p>
+<p>-- | Definition of Acidic events</p>
+<p>$(makeAcidic ''GraphState ['incTimer, 'checkTimer,'getSystemState])</p>
+</body>
+</html>
