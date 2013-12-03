@@ -25,7 +25,7 @@ edgeStateChecks _ s1@(AlarmState Tripping NotCalling More p1) s2@(AlarmState Tri
   |p1 == p2 = True                            
 edgeStateChecks _ s1@(AlarmState Tripped Calling More p1) s2@(AlarmState Tripped Answered More p2)
   |p1 == p2 = True
-edgeStateChecks _ s1@(AlarmState Tripped Calling More p1) s2@(AlarmState Tripped Answered Max p2)g
+edgeStateChecks _ s1@(AlarmState Tripped Calling More p1) s2@(AlarmState Tripped Answered Max p2)gg
   |p1 == p2 = True
 edgeStateChecks _ s1@(AlarmState Tripped Calling More p1) s2@(AlarmState Tripped NoAnswer More p2)
   |p1 == p2 = True

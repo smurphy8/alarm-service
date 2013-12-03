@@ -104,5 +104,7 @@ changeAlarm a = do c@AlarmRunner{..} <- get
 
 -- | Definition of Acidic events 
 
+$(makeAcidic ''AlarmRunner ['changeAlarm])
 $(makeAcidic ''AlarmTimer ['incTimer, 'checkTimer, 'resetTimer])
+
 
