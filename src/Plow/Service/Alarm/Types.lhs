@@ -128,12 +128,11 @@ data Count = More | Max
 \begin{code}
 
 
-data GraphState = GraphState { 
+data AlarmState = AlarmState { 
        alarm :: Alarm,
        call  :: Call,
        count :: Count,
-       person :: People (Vector ( Person)),
-       timer :: Int
+       person :: People (Vector ( Person))
  
  }
    deriving (Eq, Ord, Read, Show, Data, Typeable)
@@ -153,28 +152,57 @@ It is immutable in the state machine and provided with external functions.
 
 \begin{code}
 
-data AlarmDefinition  i c t r cl = AlarmDefinition {
-  alarmID   :: (AlarmId i),
-  clearTime :: c,
-  tripTime :: t,
-  recallTime :: r,
-  callList :: cl
+data AlarmParameters = AlarmParameters {
+  clearTime :: Int,
+  tripTime :: Int,
+  recallTime :: Int,
+  message :: Text,
+  callList :: People (Vector (Person))
   }
    deriving (Eq, Ord, Read, Show, Data, Typeable)                                   
 
 
-newtype AlarmId i = AlarmId i
-            deriving (Eq, Ord, Read, Show, Data, Typeable)                                   
 
-
-
-type DefaultAlarmId = AlarmId Int
-type DefaultAlarmDefinition = AlarmDefinition DefaultAlarmId Int Int Int ( DefaultPeople)
 
 \end{code}
 
+--------------------------------------------------
 
-  
+
+<h2> AlarmRunner Definition </h2> 
+
+The Alarm Runner pairs an internal state ('AlarmState') 
+with an (immutable) configuration ('AlarmParameters').
+
+The 'timer' is kept separate from the alarm definition. 
+
+This is so that it can run continuously and be 'peeked' at by the state handler.
+
+\begin{code}
+
+
+newtype AlarmId i = AlarmId i
+            deriving (Eq, Ord, Read, Show, Data, Typeable,SafeCopy)                                   
+
+type DefaultAlarmId = AlarmId Int
+
+data AlarmRunner = AlarmRunner {
+      alarmID   :: (AlarmId Int),
+      alarmParameters :: AlarmParameters,
+      alarmState :: AlarmState
+
+    }
+ deriving (Eq, Ord, Show, Data, Typeable)
+
+data AlarmTimer = AlarmTimer { 
+      alarmTimerID   :: (AlarmId Int),
+      timer :: Int
+}
+ deriving (Eq, Ord, Show, Data, Typeable)
+
+
+
+\end{code}
 
 <h2> Acid State definition </h2>
 
@@ -184,6 +212,9 @@ that helps keep this piece really portable
 \begin{code}
 
 
+
+$(deriveSafeCopy 0 'base ''AlarmParameters)
+
 $(deriveSafeCopy 0 'base ''Person)
 
 $(deriveSafeCopy 0 'base ''Call)
@@ -192,7 +223,10 @@ $(deriveSafeCopy 0 'base ''Alarm)
 
 $(deriveSafeCopy 0 'base ''Count)
 
-$(deriveSafeCopy 0 'base ''GraphState )
+$(deriveSafeCopy 0 'base ''AlarmState )
 
+$(deriveSafeCopy 0 'base ''AlarmRunner)
+
+$(deriveSafeCopy 0 'base ''AlarmTimer)
 \end{code}
 
