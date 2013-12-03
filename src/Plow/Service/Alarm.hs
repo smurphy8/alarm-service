@@ -7,7 +7,7 @@ module Plow.Service.Alarm where
 -- import Plow.Service.Alarm.Internal
 
 import Plow.Service.Alarm.Types
-
+import Plow.Service.Alarm.Acid
 
 
 {-| Various naming conventions for stuff here I will try to stick to:
@@ -28,27 +28,3 @@ Get -> get a piece of data from the local storage
 
 
 
-
-import Data.Text hiding (head, last)
-import Prelude   hiding (head, last)
-import Data.Vector
-import Control.Monad.State  ( get, put )
-import Data.Acid            ( AcidState, Query, Update
-                            , makeAcidic, openLocalState )
-import Data.Acid.Advanced   ( query', update' )
-import Data.Acid.Local      ( createCheckpointAndClose )
-import Data.SafeCopy        ( base, deriveSafeCopy )
-import Data.Data            ( Data, Typeable )
-
-
-
-testPeople :: DefaultPeople
-testPeople = People (fromList [Person 555 "test@Test.com" 0])
-
-initialGraphState :: GraphState
-initialGraphState = GraphState Clear NotCalling More testPeople 0
-
-
-incTimer ::Update GraphState Int
-incTimer  = do c@GraphState{..} <- get 
-               return timer
