@@ -3,7 +3,7 @@
   GeneralizedNewtypeDeriving, MultiParamTypeClasses,
   TemplateHaskell, TypeFamilies, RecordWildCards #-}
 module Plow.Service.Alarm.Acid where
-
+import Plow.Service.Alarm.Rules
 import Plow.Service.Alarm.Types
 import Data.Text hiding (head, last)
 import Prelude   hiding (head, last)
@@ -36,7 +36,8 @@ import Data.Data            ( Data, Typeable )
 
 |-}
 
-
+person1 :: Person 
+person1 = Person 555 "test@Test.com" 0
 
 testPeople :: DefaultPeople
 testPeople = People (fromList [Person 555 "test@Test.com" 0])
@@ -44,7 +45,7 @@ testPeople = People (fromList [Person 555 "test@Test.com" 0])
 
 
 initialAlarmState :: AlarmState
-initialAlarmState = AlarmState Clear NotCalling More testPeople 
+initialAlarmState = AlarmState Clear NotCalling More person1
 
 defaultAlarmParameters :: AlarmParameters
 defaultAlarmParameters = AlarmParameters 0 0 0 "test" testPeople
@@ -56,29 +57,52 @@ defaultAlarmRunner = AlarmRunner (AlarmId 0) defaultAlarmParameters initialAlarm
 initialAlarmTimer :: AlarmTimer
 initialAlarmTimer = AlarmTimer (AlarmId 0 ) 0
 
+{-| 
+timer incrementor, checker and reset |-}
 
 
--- | Cause I am dumb and will forget this... 
--- | Update is an instance of MonadState so you get a 'get' and 'put'
+-- | increment the timer by i, flexible alarm incrementor for 
+-- | time stallouts and resuming after crashes
+
+incTimer :: Int -> Update AlarmTimer Int
+incTimer  i = do c@AlarmTimer{..} <- get 
+                 let newTimer = timer + i
+                 return newTimer
 
 
-incTimer :: Update AlarmTimer Int
-incTimer  = do c@AlarmTimer{..} <- get 
-               let newTimer = succ timer
-               return newTimer
-
-
-
--- | Reader instance on Query, allows ask
+-- | Peek at the time in an alarm to update states
+-- | Non-blocking guarantees 
 
 checkTimer :: Query AlarmTimer Int 
 checkTimer = do 
   timer <$> ask
 
-getSystemState :: Query AlarmTimer AlarmTimer
-getSystemState = ask
+resetTimer :: Update AlarmTimer Int 
+resetTimer = do c@AlarmTimer{..} <- get 
+                return 0
+
+
+
+{-| AlarmState, 
+ * 'Alarm' Mutator, Checker
+ * 
+ * 'Call' Mutator, Checker
+ * 'Person'
+   + Incrementor
+   + Reset
+ * 'Count' Mutator, Checker
+|-}
+
+
+
+changeAlarm :: AlarmState -> Update AlarmRunner AlarmState
+changeAlarm a = do c@AlarmRunner{..} <- get 
+                   case checkAlarmState c a of 
+                     True -> return a
+                     False -> return alarmState
+                     
 
 -- | Definition of Acidic events 
 
-$(makeAcidic ''AlarmTimer ['incTimer, 'checkTimer])
+$(makeAcidic ''AlarmTimer ['incTimer, 'checkTimer, 'resetTimer])
 

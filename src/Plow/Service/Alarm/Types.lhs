@@ -132,7 +132,7 @@ data AlarmState = AlarmState {
        alarm :: Alarm,
        call  :: Call,
        count :: Count,
-       person :: People (Vector ( Person))
+       person::Person
  
  }
    deriving (Eq, Ord, Read, Show, Data, Typeable)
