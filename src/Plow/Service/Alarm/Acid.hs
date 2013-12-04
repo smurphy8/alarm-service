@@ -1,4 +1,4 @@
-{-# LANGUAGE BangPatterns,RankNTypes,OverloadedStrings #-}
+cab{-# LANGUAGE BangPatterns,RankNTypes,OverloadedStrings #-}
 {-# LANGUAGE CPP, DeriveDataTypeable, FlexibleContexts,
   GeneralizedNewtypeDeriving, MultiParamTypeClasses,
   TemplateHaskell, TypeFamilies, RecordWildCards #-}
@@ -95,16 +95,16 @@ resetTimer = do c@AlarmTimer{..} <- get
 
 
 
-changeAlarm :: AlarmState -> Update AlarmRunner AlarmState
-changeAlarm a = do c@AlarmRunner{..} <- get 
+changeAlarmState :: AlarmState -> Update AlarmRunner AlarmState
+changeAlarmState a = do c@AlarmRunner{..} <- get 
                    case checkAlarmState c a of 
                      True -> return a
                      False -> return alarmState
-                     
+                      
 
 -- | Definition of Acidic events 
 
-$(makeAcidic ''AlarmRunner ['changeAlarm])
+$(makeAcidic ''AlarmRunner ['changeAlarmState])
 $(makeAcidic ''AlarmTimer ['incTimer, 'checkTimer, 'resetTimer])
 
 
