@@ -17,11 +17,11 @@ module Plow.Service.Alarm.Types where
 import Data.Text hiding (head, last)
 import Prelude   hiding (head, last)
 import Data.Vector
-import Control.Monad.State  ( get, put )
-import Data.Acid            ( AcidState, Query, Update
-                            , makeAcidic, openLocalState )
-import Data.Acid.Advanced   ( query', update' )
-import Data.Acid.Local      ( createCheckpointAndClose )
+-- import Control.Monad.State  ( get, put )
+-- import Data.Acid            ( AcidState, Query, Update
+--                            , makeAcidic, openLocalState )
+-- import Data.Acid.Advanced   ( query', update' )
+-- import Data.Acid.Local      ( createCheckpointAndClose )
 import Data.SafeCopy        ( SafeCopy, base, deriveSafeCopy )
 import Data.Data            ( Data, Typeable )
 

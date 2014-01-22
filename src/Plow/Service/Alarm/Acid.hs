@@ -1,4 +1,4 @@
-cab{-# LANGUAGE BangPatterns,RankNTypes,OverloadedStrings #-}
+{-# LANGUAGE BangPatterns,RankNTypes,OverloadedStrings #-}
 {-# LANGUAGE CPP, DeriveDataTypeable, FlexibleContexts,
   GeneralizedNewtypeDeriving, MultiParamTypeClasses,
   TemplateHaskell, TypeFamilies, RecordWildCards #-}
