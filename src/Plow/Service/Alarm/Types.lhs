@@ -146,7 +146,6 @@ data AlarmState = AlarmState {
 <h2> Alarm Definition </h2>
 
 **Alarms** are defined separately from the state of the program**
-
 This is the information that is needed to fill out and check states.
 It is immutable in the state machine and provided with external functions.
 
@@ -160,8 +159,6 @@ data AlarmParameters = AlarmParameters {
   callList :: People (Vector (Person))
   }
    deriving (Eq, Ord, Read, Show, Data, Typeable)                                   
-
-
 
 
 \end{code}
